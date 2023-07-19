@@ -1,6 +1,6 @@
 name: 'MAPS'
 train:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'train'
     data_type: 'MUS'
     download: ${download}
@@ -14,7 +14,7 @@ train:
     sampling_rate: 16000
     overlap: False
 val:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'test'
     data_type: 'MUS'
     download: ${download}
@@ -29,7 +29,7 @@ val:
     overlap: True
 
 test:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'test'
     data_type: 'MUS'
     download: False

@@ -1,7 +1,7 @@
 name1: 'MAPS'
 name2: 'MAESTRO'
 train1:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'train'
     data_type: 'MUS'
     download: ${download}
@@ -16,8 +16,8 @@ train1:
     overlap: False
 
 train2:
-    root: ${data_root} 
-    groups: 'train'            
+    root: ${data_root}
+    groups: 'train'
     download: ${download}
     preload: False
     sequence_length: ${sequence_length}
@@ -26,10 +26,10 @@ train2:
     max_midi: 108
     min_midi: 21
     ext_audio: '.wav'
-    sampling_rate: 16000 
+    sampling_rate: 16000
 
 val1:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'test'
     data_type: 'MUS'
     download: ${download}
@@ -43,8 +43,8 @@ val1:
     sampling_rate: 16000
     overlap: True
 val2:
-    root: ${data_root} 
-    groups: 'validation'            
+    root: ${data_root}
+    groups: 'validation'
     download: ${download}
     preload: False
     sequence_length: ${sequence_length}
@@ -53,10 +53,10 @@ val2:
     max_midi: 108
     min_midi: 21
     ext_audio: '.wav'
-    sampling_rate: 16000 
+    sampling_rate: 16000
 
 test:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'test'
     data_type: 'MUS'
     download: False

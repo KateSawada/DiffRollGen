@@ -6,6 +6,6 @@ shape:
 
 defaults:
     - model: Unet
-        
+
 trainer:
     gpus: ${gpus}

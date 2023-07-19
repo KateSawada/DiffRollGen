@@ -15,11 +15,11 @@ pretrained_path: './weights/MAESTRO_pretrain_L15C512_k=9_pad=1.ckpt'
 dataloader:
     train:
         batch_size: 16
-        num_workers: 12 
+        num_workers: 12
         shuffle: True
         pin_memory: ${pin_memory}
         prefetch_factor: 2
-        persistent_workers: True        
+        persistent_workers: True
     val:
         batch_size: 16
         num_workers: 4
@@ -30,21 +30,21 @@ dataloader:
         num_workers: 4
         shuffle: False
         pin_memory: ${pin_memory}
-        
-        
+
+
 trainer:
     gpus: ${gpus}
     max_epochs: ${epochs}
     check_val_every_n_epoch: ${val_freq}
-    
+
 modelcheckpoint:
     monitor: 'Train/diffusion_loss'
     filename: '{epoch:02d}e-diffusion_loss{Train/diffusion_loss:.2f}'
     save_top_k: 2
     save_last: True
     mode: "min"
-    auto_insert_metric_name: False    
-    
+    auto_insert_metric_name: False
+
 
 
 defaults:

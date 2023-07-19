@@ -16,5 +16,4 @@ generation_filter: 0.02
 inpainting_t:
     - 500
     - 650
-inpainting_f: null 
-    
+inpainting_f: null

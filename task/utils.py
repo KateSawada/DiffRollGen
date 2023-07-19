@@ -31,7 +31,7 @@ def extract_notes_wo_velocity(onsets, frames, onset_threshold=0.5, frame_thresho
     pitches = []
     intervals = []
 
-    dim1, dim2 = np.nonzero(onset_diff)    
+    dim1, dim2 = np.nonzero(onset_diff)
     for frame, pitch in zip(dim1, dim2):
         # The below code is for torch
         # frame = nonzero[0].item()
@@ -40,13 +40,13 @@ def extract_notes_wo_velocity(onsets, frames, onset_threshold=0.5, frame_thresho
         onset = frame
         offset = frame
 
-        # This while loop is looking for where does the note ends        
+        # This while loop is looking for where does the note ends
         while onsets[offset, pitch].item() or frames[offset, pitch].item():
             offset += 1
             if offset == onsets.shape[0]:
                 break
 
-        # After knowing where does the note start and end, we can return the pitch information (and velocity)        
+        # After knowing where does the note start and end, we can return the pitch information (and velocity)
         if offset > onset:
             pitches.append(pitch)
             intervals.append([onset, offset])

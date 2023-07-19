@@ -7,19 +7,19 @@ checkpoint_path: 'weights/Pretrain_MAESTRO-retrain_MAESTRO-k=9.ckpt' # will be i
 
 
 
-        
+
 dataloader:
     batch_size: 4
     num_workers: 8
     shuffle: False
     pin_memory: True
-        
+
 task:
-    frame_threshold: 0.8        
-        
+    frame_threshold: 0.8
+
 trainer:
     gpus: ${gpus}
-    
+
 defaults:
     - model: ClassifierFreeDiffRoll
     - task: generation

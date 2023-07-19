@@ -25,7 +25,7 @@ class Custom(Dataset):
 
         self.sample_rate = sample_rate
         self.segment_samples = max_segment_samples
-        
+
 
     def __len__(self):
         return len(self.audio_name_list)
@@ -50,7 +50,7 @@ class Custom(Dataset):
             'reg_pedal_offset_roll': (frames_num,),
             'pedal_frame_roll': (frames_num,)}
         """
-        
+
         # try:
         waveform, rate = torchaudio.load(self.audio_name_list[idx])
         if waveform.shape[0]==2: # if the audio file is stereo take mean
@@ -59,30 +59,30 @@ class Custom(Dataset):
             waveform = waveform[0] # remove the first dim
 
         if rate!=self.sample_rate:
-            waveform = resample(waveform, rate, self.sample_rate)            
-        # except:    
+            waveform = resample(waveform, rate, self.sample_rate)
+        # except:
         #     waveform = torch.tensor([[]])
         #     rate = 0
         #     print(f"{self.audio_name_list[idx].name} is corrupted")
-            
+
 
         data_dict = {}
 
         # Load segment waveform.
         # with h5py.File(waveform_hdf5_path, 'r') as hf:
         audio_length = len(waveform)
-            
+
 
         start_sample = 0
         start_time = 0
         end_sample = audio_length
-        
+
         if waveform.shape[0]>=self.segment_samples:
             waveform_seg = waveform[:self.segment_samples]
         else:
             pad = self.segment_samples - waveform.shape[0]
             waveform_seg = torch.nn.functional.pad(waveform, [0,pad], value=0)
-        # (segment_samples,), e.g., (160000,)            
+        # (segment_samples,), e.g., (160000,)
 
         x = torch.randn(1, 640, 88)
         data_dict['waveform'] = waveform_seg

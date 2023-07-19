@@ -12,8 +12,8 @@ data_root: './dataset'
 
 dataset:
     train:
-        root: ${data_root} 
-        groups: 'train'            
+        root: ${data_root}
+        groups: 'train'
         download: ${download}
         preload: False
         sequence_length: ${sequence_length}
@@ -22,10 +22,10 @@ dataset:
         max_midi: 108
         min_midi: 21
         ext_audio: '.wav'
-        sampling_rate: 16000    
+        sampling_rate: 16000
     val:
-        root: ${data_root} 
-        groups: 'validation'            
+        root: ${data_root}
+        groups: 'validation'
         download: False
         preload: False
         sequence_length: ${sequence_length}
@@ -35,10 +35,10 @@ dataset:
         min_midi: 21
         ext_audio: '.wav'
         sampling_rate: 16000
-        
+
     test:
-        root: ${data_root} 
-        groups: 'test'            
+        root: ${data_root}
+        groups: 'test'
         download: False
         preload: False
         sequence_length: ${sequence_length}
@@ -48,7 +48,7 @@ dataset:
         min_midi: 21
         ext_audio: '.wav'
         sampling_rate: 16000
-        
+
 dataloader:
     train:
         batch_size: 16
@@ -65,21 +65,21 @@ dataloader:
         num_workers: 8
         shuffle: False
         pin_memory: True
-        
+
 model:
     dim: 28
     channels: 1
-        
+
 trainer:
     gpus: ${gpus}
     max_epochs: ${epochs}
     check_val_every_n_epoch: ${val_freq}
-    
+
 task:
     lr: ${learning_rate}
     timesteps: 200
     loss_type: 'huber'
 
-# defaults:    
+# defaults:
 #     - spec_layer: Mel
 #     - model: CNN_LSTM

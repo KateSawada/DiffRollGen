@@ -1,6 +1,6 @@
 name: 'MAPS'
 args:
-    root: ${data_root} 
+    root: ${data_root}
     groups: 'test'
     data_type: 'MUS'
     download: False

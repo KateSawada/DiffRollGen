@@ -20,12 +20,12 @@ from omegaconf import OmegaConf
 import warnings
 
 @hydra.main(config_path="config", config_name="sampling")
-def main(cfg):       
+def main(cfg):
     cfg.data_root = to_absolute_path(cfg.data_root)
     cfg.dataset.args.audio_path = to_absolute_path(cfg.dataset.args.audio_path)
     S = cfg.dataset.num_samples # choose the number of samples to generate
-    x = torch.randn(S, 1, 640, 88)    
-    
+    x = torch.randn(S, 1, 640, 88)
+
     if cfg.task.sampling.type=='inpainting_ddpm_x0':
         if cfg.dataset.name in ['MAESTRO', 'MAPS']:
             dataset = getattr(MusicDataset, cfg.dataset.name)(**OmegaConf.to_container(cfg.dataset.args, resolve=True))
@@ -40,7 +40,7 @@ def main(cfg):
             dataset = Custom(**cfg.dataset.args)
         else:
             pass
-        
+
     elif cfg.task.sampling.type=='generation_ddpm_x0':
         waveform = torch.randn(S, 327680)
         dataset = TensorDataset(x, waveform)
@@ -63,14 +63,14 @@ def main(cfg):
                                                                     generation_filter=cfg.task.generation_filter,
                                                                     inpainting_t=cfg.task.inpainting_t,
                                                                     inpainting_f=cfg.task.inpainting_f)
-    
+
     name = f"Generation-{cfg.model.name}-k={cfg.model.args.kernel_size}"
-    logger = TensorBoardLogger(save_dir=".", version=1, name=name)    
+    logger = TensorBoardLogger(save_dir=".", version=1, name=name)
 
     trainer = pl.Trainer(**cfg.trainer,
                          logger=logger)
-    
+
     trainer.predict(model, loader)
-    
+
 if __name__ == "__main__":
     main()

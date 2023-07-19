@@ -12,4 +12,4 @@ args:
     norm_args:
     - 0
     - 1
-    - 'imagewise'    
+    - 'imagewise'

@@ -30,11 +30,11 @@ ConvTranspose2d = nn.ConvTranspose2d
 def trim_spec_roll(roll, spectrogram):
     T_roll = roll.shape[-1]
     T_spec = spectrogram.shape[-1]
-    
+
     # trimming extra time steps
     T_min = min(T_roll, T_spec)
     roll = roll[..., :T_min]
-    spectrogram = spectrogram[..., :T_min]    
+    spectrogram = spectrogram[..., :T_min]
 
     return roll, spectrogram
 
@@ -149,7 +149,7 @@ class ResidualBlock(nn.Module):
         y = self.output_projection(y)
         residual, skip = torch.chunk(y, 2, dim=1)
         return (x + residual) / sqrt(2.0), skip
-    
+
 class ResidualBlockz(nn.Module):
     def __init__(self, n_mels, residual_channels, dilation, uncond=False):
         '''
@@ -165,10 +165,10 @@ class ResidualBlockz(nn.Module):
             self.conditioner_projection = Conv1d(n_mels, 2 * residual_channels, 1)
             uncon_z = torch.empty(2 * residual_channels, 640)
             uncon_z = nn.Parameter(uncon_z, requires_grad=True)
-            self.register_parameter("uncon_z", uncon_z)          
+            self.register_parameter("uncon_z", uncon_z)
         else: # unconditional model
             self.conditioner_projection = None
-            
+
         self.output_projection = Conv1d(residual_channels, 2 * residual_channels, 1)
 
     def forward(self, x, diffusion_step, conditioner=None):
@@ -191,8 +191,8 @@ class ResidualBlockz(nn.Module):
 
         y = self.output_projection(y)
         residual, skip = torch.chunk(y, 2, dim=1)
-        return (x + residual) / sqrt(2.0), skip    
-    
+        return (x + residual) / sqrt(2.0), skip
+
 class ResidualBlockv2(nn.Module):
     def __init__(self, n_mels, residual_channels, dilation, uncond=False):
         '''
@@ -260,17 +260,17 @@ class DiffWave(nn.Module):
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
-        
+
         if self.spectrogram_upsampler: # use conditional model
             spectrogram = self.spectrogram_upsampler(spectrogram)
-            
+
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, spectrogram)
-            
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
@@ -279,7 +279,7 @@ class DiffWave(nn.Module):
         x = self.output_projection(x)
         return x
 
-    
+
 class DiffRoll(SpecRollDiffusion):
     def __init__(self,
                  residual_channels,
@@ -294,8 +294,8 @@ class DiffRoll(SpecRollDiffusion):
         super().__init__(**kwargs)
         self.input_projection = Conv1d(88, residual_channels, 1)
         self.diffusion_embedding = DiffusionEmbedding(len(self.betas))
-        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])         
-        
+        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])
+
         # Original dilation for audio was 2**(i % dilation_cycle_length)
         # but we might not need dilation for piano roll
         self.residual_layers = nn.ModuleList([
@@ -305,21 +305,21 @@ class DiffRoll(SpecRollDiffusion):
         self.skip_projection = Conv1d(residual_channels, residual_channels, 1)
         self.output_projection = Conv1d(residual_channels, 88, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
+
         if unconditional:
             self.mel_layer = None
         else:
-            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)        
+            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
 
     def forward(self, x_t, waveform, diffusion_step):
         # roll (B, 1, T, F)
         # waveform (B, L)
         x_t = x_t.squeeze(1).transpose(1,2)
-        
+
         if self.mel_layer != None:
             spec = self.mel_layer(waveform) # (B, n_mels, T)
             spec = torch.log(spec+1e-6)
-            spec = self.normalize(spec)            
+            spec = self.normalize(spec)
             x_t, spectrogram = trim_spec_roll(x_t, spec)
         else:
             spectrogram = None
@@ -327,15 +327,15 @@ class DiffRoll(SpecRollDiffusion):
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
-            
+
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, spectrogram)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
@@ -357,7 +357,7 @@ class DiffRollv2(SpecRollDiffusion):
         self.input_projection = Conv2d(1, residual_channels, 1)
         self.diffusion_embedding = DiffusionEmbedding(len(self.betas))
         self.spec_projection = Conv1d(n_mels, 88, 1)
-        
+
         # Original dilation for audio was 2**(i % dilation_cycle_length)
         # but we might not need dilation for piano roll
         self.residual_layers = nn.ModuleList([
@@ -367,11 +367,11 @@ class DiffRollv2(SpecRollDiffusion):
         self.skip_projection = Conv2d(residual_channels, residual_channels, 1)
         self.output_projection = Conv2d(residual_channels, 1, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
+
         if unconditional:
             self.mel_layer = None
         else:
-            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)        
+            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
 
     def forward(self, x_t, waveform, diffusion_step):
         # x_t (B, 1, T, 88)
@@ -386,30 +386,30 @@ class DiffRollv2(SpecRollDiffusion):
         else:
             spec = None # spec before projection
             spectrogram = None # spec after projection
-        
+
         x = self.input_projection(x_t)
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, spectrogram)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
         x = self.skip_projection(x)
         x = F.relu(x)
         x = self.output_projection(x) #(B, 1, F, T)
-        
+
         return x.transpose(-2,-1), spec #(B, T, F)
-    
-    
-    
+
+
+
 class DiffRollv2Debug(SpecRollDiffusion):
     def __init__(self,
                  residual_channels,
@@ -430,37 +430,37 @@ class DiffRollv2Debug(SpecRollDiffusion):
         self.skip_projection = Conv2d(residual_channels, residual_channels, 1)
         self.output_projection = Conv2d(residual_channels, 1, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
+
         if unconditional:
             self.mel_layer = None
         else:
-            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)        
+            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
 
     def forward(self, x_t, roll, diffusion_step):
         # roll (B, 1, T, 88)
         # waveform (B, L)
         roll = roll.transpose(-1,-2)
         x_t = x_t.transpose(-1,-2)
-        
+
         x = self.input_projection(x_t)
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, roll)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
         x = self.skip_projection(x)
         x = F.relu(x)
         x = self.output_projection(x) #(B, 1, F, T)
-        
+
         return x.transpose(-2,-1), roll #(B, T, F)
 
 class DiffRollDebug(SpecRollDiffusion):
@@ -483,27 +483,27 @@ class DiffRollDebug(SpecRollDiffusion):
         self.skip_projection = Conv1d(residual_channels, residual_channels, 1)
         self.output_projection = Conv1d(residual_channels, 88, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
+
     def forward(self, x_t, roll, diffusion_step):
         # roll (B, 1, T, F)
         # waveform (B, L)
         roll = roll.squeeze(1).transpose(1,2)
         x_t = x_t.squeeze(1).transpose(1,2)
-        
+
         spectrogram = None
         x = self.input_projection(x_t)
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
-            
+
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, roll)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
@@ -511,8 +511,8 @@ class DiffRollDebug(SpecRollDiffusion):
         x = F.relu(x)
         x = self.output_projection(x) #(B, F, T)
         return x.transpose(1,2).unsqueeze(1), roll #(B, T, F)
-    
-    
+
+
 class DiffRollBaseline(SpecRollBaseline):
     def __init__(self,
                  residual_channels,
@@ -521,13 +521,13 @@ class DiffRollBaseline(SpecRollBaseline):
                  residual_layers = 30,
                  kernel_size = 3,
                  dilation_base = 1,
-                 dilation_bound = 1, 
+                 dilation_bound = 1,
                  spec_args = {},
                  **kwargs):
         super().__init__(**kwargs)
         self.input_projection = Conv1d(88, residual_channels, 1)
         self.diffusion_embedding = DiffusionEmbedding(self.hparams.timesteps)
-        
+
         # Original dilation for audio was 2**(i % dilation_cycle_length)
         # but we might not need dilation for piano roll
         self.residual_layers = nn.ModuleList([
@@ -537,17 +537,17 @@ class DiffRollBaseline(SpecRollBaseline):
         self.skip_projection = Conv1d(residual_channels, residual_channels, 1)
         self.output_projection = Conv1d(residual_channels, 88, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
+
         if unconditional:
             self.mel_layer = None
         else:
-            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)        
+            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
 
     def forward(self, x_t, waveform, diffusion_step):
         # roll (B, 1, T, F)
         # waveform (B, L)
         x_t = x_t.squeeze(1).transpose(1,2)
-        
+
         if self.mel_layer != None:
             spec = self.mel_layer(waveform) # (B, n_mels, T)
             spec = torch.log(spec+1e-6)
@@ -558,15 +558,15 @@ class DiffRollBaseline(SpecRollBaseline):
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
-            
+
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, spectrogram)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
@@ -574,8 +574,8 @@ class DiffRollBaseline(SpecRollBaseline):
         x = F.relu(x)
         x = self.output_projection(x) #(B, F, T)
         return x.transpose(1,2).unsqueeze(1), spectrogram #(B, T, F)
-    
-    
+
+
 class ClassifierFreeDiffRoll(SpecRollDiffusion):
     def __init__(self,
                  residual_channels,
@@ -596,21 +596,21 @@ class ClassifierFreeDiffRoll(SpecRollDiffusion):
         super().__init__(**kwargs)
         self.input_projection = Conv1d(88, residual_channels, 1)
         self.diffusion_embedding = DiffusionEmbedding(len(self.betas))
-        
+
         if condition == 'trainable_spec':
             trainable_parameters = torch.full((spec_args.n_mels,641), -1).float() # TODO: makes it automatic later
-            
+
             trainable_parameters = nn.Parameter(trainable_parameters, requires_grad=True)
             self.register_parameter("trainable_parameters", trainable_parameters)
-            self.uncon_dropout = self.trainable_dropout        
-            
+            self.uncon_dropout = self.trainable_dropout
+
         elif condition == 'fixed' or condition == 'trainable_z':
             self.uncon_dropout = self.fixed_dropout
         else:
             raise ValueError("unrecognized condition '{condition}'")
-            
-        
-        
+
+
+
         # Original dilation for audio was 2**(i % dilation_cycle_length)
         # but we might not need dilation for piano roll
         if condition == 'trainable_z':
@@ -618,41 +618,41 @@ class ClassifierFreeDiffRoll(SpecRollDiffusion):
             self.residual_layers = nn.ModuleList([
                 ResidualBlockz(n_mels, residual_channels, dilation_base**(i % dilation_bound), kernel_size, uncond=unconditional)
                 for i in range(residual_layers)
-            ])            
+            ])
         else:
             self.residual_layers = nn.ModuleList([
                 ResidualBlock(n_mels, residual_channels, dilation_base**(i % dilation_bound), kernel_size, uncond=unconditional)
                 for i in range(residual_layers)
             ])
-            
+
         self.skip_projection = Conv1d(residual_channels, residual_channels, 1)
         self.output_projection = Conv1d(residual_channels, 88, 1)
         nn.init.zeros_(self.output_projection.weight)
-        
-        self.normalize_spec = Normalization(0, 1, norm_args[2])   
-        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])        
 
-        self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)        
+        self.normalize_spec = Normalization(0, 1, norm_args[2])
+        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])
+
+        self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
 
     def forward(self, x_t, waveform, diffusion_step, sampling=False, inpainting_t=None, inpainting_f=None):
         # roll (B, 1, T, F)
         # waveform (B, L)
         x_t = x_t.squeeze(1).transpose(1,2)
-        
+
         if self.mel_layer != None:
             spec = self.mel_layer(waveform) # (B, n_mels, T)
             spec = torch.log(spec+1e-6)
             spec = self.normalize_spec(spec)
             if self.training: # only use dropout druing training
                 spec = self.uncon_dropout(spec, self.hparams.spec_dropout) # making some spec 0 to be unconditional
-                
+
             if inpainting_t and inpainting_f==None:
                 spec[:,:,int(inpainting_t[0]):int(inpainting_t[1])] = -1
             elif inpainting_t==None and inpainting_f:
                 spec[:,int(inpainting_f[0]):int(inpainting_f[1]),:] = -1
             elif inpainting_t and inpainting_f:
-                spec[:,int(inpainting_f[0]):int(inpainting_f[1]),int(inpainting_t[0]):int(inpainting_t[1])] = -1       
-                
+                spec[:,int(inpainting_f[0]):int(inpainting_f[1]),int(inpainting_t[0]):int(inpainting_t[1])] = -1
+
             if sampling==True:
                 if self.hparams.condition == 'trainable_spec':
                     spec = self.trainable_parameters
@@ -662,21 +662,21 @@ class ClassifierFreeDiffRoll(SpecRollDiffusion):
             x_t, spectrogram = trim_spec_roll(x_t, spec)
         else:
             spectrogram = None
-            
+
 
         x = self.input_projection(x_t)
         x = F.relu(x)
 
         diffusion_step = self.diffusion_embedding(diffusion_step)
-            
+
         skip = None
-        
+
         index = 0
         for layer in self.residual_layers:
             index += 1
             x, skip_connection = layer(x, diffusion_step, spectrogram)
-            
-            
+
+
             skip = skip_connection if skip is None else skip_connection + skip
 
         x = skip / sqrt(len(self.residual_layers))
@@ -684,16 +684,16 @@ class ClassifierFreeDiffRoll(SpecRollDiffusion):
         x = F.relu(x)
         x = self.output_projection(x) #(B, F, T)
         return x.transpose(1,2).unsqueeze(1), spectrogram #(B, T, F)
-    
-    
+
+
     def fixed_dropout(self, x, p, masked_value=-1):
         mask = torch.distributions.Bernoulli(probs=(p)).sample((x.shape[0],)).long()
         mask_idx = mask.nonzero()
         x[mask_idx] = masked_value
         return x
-    
+
     def trainable_dropout(self, x, p):
         mask = torch.distributions.Bernoulli(probs=(p)).sample((x.shape[0],)).long()
         mask_idx = mask.nonzero()
         x[mask_idx] = self.trainable_parameters
-        return x        
+        return x
