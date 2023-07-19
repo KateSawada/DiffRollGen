@@ -9,3 +9,4 @@ weights
 
 /venv
 /dataset
+*.out
