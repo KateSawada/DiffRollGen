@@ -643,6 +643,8 @@ class SpecRollDiffusion(pl.LightningModule):
     def visualize_figure(self, tensors, tag, batch_idx):
         fig, ax = plt.subplots(2,2)
         for idx, tensor in enumerate(tensors): # visualize only 4 piano rolls
+            if (idx >= 4):
+                break
             # roll_pred (1, T, F)
             ax.flatten()[idx].imshow(tensor[0].T.cpu(), aspect='auto', origin='lower')
         self.logger.experiment.add_figure(f"{tag}", fig, global_step=self.current_epoch)
