@@ -5,3 +5,7 @@ args:
     n_mels: ${spec.args.n_mels}
     residual_layers: 30
     dilation_base: 1
+    norm_args:
+    - 0
+    - 1
+    - 'imagewise'

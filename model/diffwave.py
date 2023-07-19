@@ -352,6 +352,7 @@ class DiffRollv2(SpecRollDiffusion):
                  residual_layers = 30,
                  dilation_base = 1,
                  spec_args = {},
+                 norm_args = [],
                  **kwargs):
         super().__init__(**kwargs)
         self.input_projection = Conv2d(1, residual_channels, 1)
@@ -372,6 +373,10 @@ class DiffRollv2(SpecRollDiffusion):
             self.mel_layer = None
         else:
             self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
+
+        self.normalize_spec = Normalization(0, 1, norm_args[2])
+        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])
+
 
     def forward(self, x_t, waveform, diffusion_step):
         # x_t (B, 1, T, 88)
