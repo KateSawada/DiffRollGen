@@ -49,6 +49,11 @@ def Conv2d(*args, **kwargs):
     return layer
 
 
+def Conv3d(*args, **kwargs):
+    layer = nn.Conv3d(*args, **kwargs)
+    nn.init.kaiming_normal_(layer.weight)
+    return layer
+
 
 @torch.jit.script
 def silu(x):
@@ -233,6 +238,58 @@ class ResidualBlockv2(nn.Module):
         residual, skip = torch.chunk(y, 2, dim=1)
         return (x + residual) / sqrt(2.0), skip
 
+
+class ResidualBlock3D(nn.Module):
+    def __init__(self, n_mels, residual_channels, dilation, uncond=False):
+        '''
+        :param n_mels: inplanes of conv1x1 for spectrogram conditional
+        :param residual_channels: audio conv
+        :param dilation: audio conv dilation
+        :param uncond: disable spectrogram conditional
+        '''
+        super().__init__()
+        self.dilated_conv = Conv3d(
+            residual_channels,
+            2 * residual_channels,
+            3,  # TODO: kernel sizeを考える
+            padding=dilation,
+            dilation=dilation)
+        self.diffusion_projection = Linear(512, residual_channels)
+        if not uncond:  # conditional model
+            self.conditioner_projection = Conv3d(1, 2 * residual_channels, 1)
+        else:  # unconditional model
+            self.conditioner_projection = None
+
+        self.output_projection = Conv3d(
+            residual_channels,
+            2 * residual_channels,
+            1)
+
+    def forward(self, x, diffusion_step, conditioner=None):
+        # x (B, 256, 88, T)
+        # diffusion_step (B, 512)
+        # conditioner (B, 1, 88, 640)
+        assert ((conditioner is None and self.conditioner_projection is None) or
+                (conditioner is not None and
+                 self.conditioner_projection is not None))
+
+        diffusion_step = self.diffusion_projection(diffusion_step) \
+            .unsqueeze(-1).unsqueeze(-1).unsqueeze(-1)
+        y = x + diffusion_step
+        if self.conditioner_projection is None:  # using a unconditional model
+            y = self.dilated_conv(y)
+        else:
+            conditioner = self.conditioner_projection(conditioner)
+            y = self.dilated_conv(y) + conditioner
+
+        gate, filter = torch.chunk(y, 2, dim=1)
+        y = torch.sigmoid(gate) * torch.tanh(filter)
+
+        y = self.output_projection(y)
+        residual, skip = torch.chunk(y, 2, dim=1)
+        return (x + residual) / sqrt(2.0), skip
+
+
 class DiffWave(nn.Module):
     def __init__(self, params):
         super().__init__()
@@ -412,6 +469,90 @@ class DiffRollv2(SpecRollDiffusion):
         x = self.output_projection(x) #(B, 1, F, T)
 
         return x.transpose(-2,-1), spec #(B, T, F)
+
+
+class MuseDiff(SpecRollDiffusion):
+    def __init__(self,
+                 n_instruments,
+                 residual_channels,
+                 unconditional,
+                 n_mels,
+                 residual_layers=30,
+                 dilation_base=1,
+                 spec_args={},
+                 norm_args=[],
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.input_projection = Conv3d(n_instruments, residual_channels, 1)
+        self.diffusion_embedding = DiffusionEmbedding(len(self.betas))
+        # self.spec_projection = Conv1d(n_mels, 88, 1)
+
+        # Original dilation for audio was 2**(i % dilation_cycle_length)
+        # but we might not need dilation for piano roll
+        self.residual_layers = nn.ModuleList([
+            ResidualBlock3D(
+                n_mels,
+                residual_channels,
+                dilation_base**(i % 10),
+                uncond=unconditional)
+            for i in range(residual_layers)
+        ])
+        self.skip_projection = Conv3d(residual_channels, residual_channels, 1)
+        self.output_projection = Conv3d(residual_channels, n_instruments, 1)
+        nn.init.zeros_(self.output_projection.weight)
+
+        if unconditional:
+            self.mel_layer = None
+        else:
+            raise NotImplementedError("conditional is not implemented."
+                                      "use `unconditional = True`.")
+            self.mel_layer = torchaudio.transforms.MelSpectrogram(**spec_args)
+
+        self.normalize_spec = Normalization(0, 1, norm_args[2])
+        self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])
+
+    def forward(
+            self,
+            x_t,
+            waveform,
+            diffusion_step,
+            sampling=False,
+            inpainting_t=None,
+            inpainting_f=None):
+        # x_t (B, 1, T, 88)
+        # waveform (B, L)
+        x_t = x_t.transpose(-1, -2)
+
+        if self.mel_layer is not None:
+            raise NotImplementedError("conditional is not implemented."
+                                      "use `unconditional = True`.")
+            spec = self.mel_layer(waveform)  # (B, n_mels, T)
+            spec = torch.log(spec + 1e-6)
+            x_t, spectrogram = trim_spec_roll(x_t, spec)
+            spectrogram = self.spec_projection(spectrogram).unsqueeze(1)  # (B, 1, 88, T)
+        else:
+            spec = None  # spec before projection
+            spectrogram = None  # spec after projection
+
+        x = self.input_projection(x_t)
+        x = F.relu(x)
+
+        diffusion_step = self.diffusion_embedding(diffusion_step)
+        skip = None
+
+        index = 0
+        for layer in self.residual_layers:
+            index += 1
+            x, skip_connection = layer(x, diffusion_step, spectrogram)
+
+            skip = skip_connection if skip is None else skip_connection + skip
+
+        x = skip / sqrt(len(self.residual_layers))
+        x = self.skip_projection(x)
+        x = F.relu(x)
+        x = self.output_projection(x)  # (B, 1, F, T)
+
+        return x.transpose(-2, -1), spec  # (B, T, F)
 
 
 
