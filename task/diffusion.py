@@ -538,9 +538,10 @@ class SpecRollDiffusion(pl.LightningModule):
         roll_pred = noise_list[-1][0] # (B, 1, T, F)
 
         if batch_idx==0:
-            self.visualize_figure(spec.transpose(-1,-2).unsqueeze(1),
-                                  'Test/spec',
-                                  batch_idx)
+            if (spec is not None):
+                self.visualize_figure(spec.transpose(-1,-2).unsqueeze(1),
+                                    'Test/spec',
+                                    batch_idx)
             for noise_npy, t_index in noise_list:
                 if (t_index+1)%10==0:
                     fig, ax = plt.subplots(2,2)
@@ -1247,7 +1248,7 @@ def save_midi(path, pitches, intervals, velocities):
     file = MidiFile()
     track = MidiTrack()
     file.tracks.append(track)
-    ticks_per_second = file.ticks_per_beat * 2.0
+    ticks_per_second = file.ticks_per_beat * 8.0
 
     events = []
     for i in range(len(pitches)):

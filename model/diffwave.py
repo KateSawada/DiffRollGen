@@ -378,7 +378,7 @@ class DiffRollv2(SpecRollDiffusion):
         self.normalize = Normalization(norm_args[0], norm_args[1], norm_args[2])
 
 
-    def forward(self, x_t, waveform, diffusion_step):
+    def forward(self, x_t, waveform, diffusion_step, sampling=False, inpainting_t=None, inpainting_f=None):
         # x_t (B, 1, T, 88)
         # waveform (B, L)
         x_t = x_t.transpose(-1,-2)
