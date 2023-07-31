@@ -2,7 +2,7 @@ name: 'MuseDiff'
 args:
     n_instruments: 5
     residual_channels: 16
-    unconditional: False
+    unconditional: True
     n_mels: ${spec.args.n_mels}
     residual_layers: 30
     dilation_base: 1
