@@ -1,4 +1,4 @@
-name: 'DiffRoll3d'
+name: 'MuseDiff'
 args:
     n_instruments: 5
     residual_channels: 16
