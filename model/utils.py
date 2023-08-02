@@ -26,6 +26,10 @@ class Normalization():
                 x_min = x.flatten(1).min(1, keepdim=True)[0]
                 x_max = x_max.unsqueeze(1) # Make it broadcastable
                 x_min = x_min.unsqueeze(1) # Make it broadcastable
+                while (x.ndim != x_min.ndim):
+                    x_max = x_max.unsqueeze(1) # Make it broadcastable
+                    x_min = x_min.unsqueeze(1) # Make it broadcastable
+
                 x_std = (x-x_min)/(x_max-x_min)
                 x_scaled = x_std * (max - min) + min
                 x_scaled[torch.isnan(x_scaled)]=min # if piano roll is empty, turn them to min

@@ -12,22 +12,31 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 import AudioLoader.music.amt as MusicDataset
+from utils.musegan_dataset import MuseGANDataset
+
 
 @hydra.main(config_path="config", config_name="spec_roll")
 def main(cfg):
     cfg.data_root = to_absolute_path(cfg.data_root)
 
-    train_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.train)
-    val_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.val)
-    test_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.test)
+    if cfg.dataset.name in ['MAESTRO', 'MAPS']:
+        train_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.train)
+        val_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.val)
+        test_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.test)
+    elif cfg.dataset.name in ['MuseGANDataset']:
+        train_set = MuseGANDataset(cfg.dataset.train_list)
+        val_set = MuseGANDataset(cfg.dataset.val_list)
+        test_set = MuseGANDataset(cfg.dataset.test_list)
+    else:
+        raise ValueError(f"{cfg.dataset.name} is not supported")
 
     train_loader = DataLoader(train_set, **cfg.dataloader.train)
     val_loader = DataLoader(val_set, **cfg.dataloader.val)
     test_loader = DataLoader(test_set, **cfg.dataloader.test)
 
     # Model
-    model = getattr(Model, cfg.model.name)\
-        (**cfg.model.args, spec_args=cfg.spec.args, **cfg.task)
+    model = getattr(Model, cfg.model.name)(
+        **cfg.model.args, spec_args=cfg.spec.args, **cfg.task)
 
     optimizer = Adam(model.parameters(), lr=1e-3)
 

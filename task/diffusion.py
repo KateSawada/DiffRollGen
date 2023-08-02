@@ -42,6 +42,12 @@ def q_sample(x_start, t, sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod, noi
     sqrt_alphas_cumprod_t = sqrt_alphas_cumprod_t[:, None, None, None].to(x_start.device)
     sqrt_one_minus_alphas_cumprod_t = sqrt_one_minus_alphas_cumprod_t[:, None, None, None].to(x_start.device)
 
+    while (x_start.ndim != sqrt_alphas_cumprod_t.ndim):
+        sqrt_alphas_cumprod_t = \
+            sqrt_alphas_cumprod_t.unsqueeze(1)
+        sqrt_one_minus_alphas_cumprod_t = \
+            sqrt_one_minus_alphas_cumprod_t.unsqueeze(1)
+
     # scale down the input, and scale up the noise as time increases?
     return sqrt_alphas_cumprod_t * x_start + sqrt_one_minus_alphas_cumprod_t * noise
 
@@ -647,7 +653,14 @@ class SpecRollDiffusion(pl.LightningModule):
             if (idx >= 4):
                 break
             # roll_pred (1, T, F)
-            ax.flatten()[idx].imshow(tensor[0].T.cpu(), aspect='auto', origin='lower')
+            if (tensor.ndim == 3):  # DiffRoll
+                ax.flatten()[idx].imshow(tensor[0].T.cpu(), aspect='auto', origin='lower')
+            elif (tensor.ndim == 5 and tensor.shape[3] == 48):  # MuseDiff
+                # print(tensor.shape) >>> torch.Size([1, 5, 4, 48, 88])
+                tensor = tensor.squeeze(0).permute(1, 2, 0, 3)
+                shape = tensor.shape
+                tensor = tensor.reshape(shape[0] * shape[1], shape[2] * shape[3])
+                ax.flatten()[idx].imshow(tensor.T.cpu(), aspect='auto', origin='lower')
         self.logger.experiment.add_figure(f"{tag}", fig, global_step=self.current_epoch)
         plt.close()
 
@@ -673,7 +686,6 @@ class SpecRollDiffusion(pl.LightningModule):
         # t_tensor = t.repeat(batch_size).to(roll.device)
 
         t = torch.randint(0, self.hparams.timesteps, (batch_size,), device=device).long() # more diverse sampling
-
 
         noise = torch.randn_like(roll) # creating label noise
 

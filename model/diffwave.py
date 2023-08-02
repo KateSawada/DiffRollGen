@@ -522,6 +522,7 @@ class MuseDiff(SpecRollDiffusion):
         # x_t (B, 1, T, 88)
         # waveform (B, L)
         x_t = x_t.transpose(-1, -2)
+        x_t = x_t.squeeze(1)  # DiffRollの実装に合わせるために，1次元目を削除
 
         if self.mel_layer is not None:
             raise NotImplementedError("conditional is not implemented."
@@ -551,6 +552,8 @@ class MuseDiff(SpecRollDiffusion):
         x = self.skip_projection(x)
         x = F.relu(x)
         x = self.output_projection(x)  # (B, 1, F, T)
+
+        x = x.unsqueeze(1)
 
         return x.transpose(-2, -1), spec  # (B, T, F)
 
