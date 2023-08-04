@@ -519,18 +519,17 @@ class MuseDiff(SpecRollDiffusion):
             sampling=False,
             inpainting_t=None,
             inpainting_f=None):
-        # x_t (B, 1, T, 88)
-        # waveform (B, L)
+        # x_t [B, 1, 5, 4, 48, 88]
         x_t = x_t.transpose(-1, -2)
         x_t = x_t.squeeze(1)  # DiffRollの実装に合わせるために，1次元目を削除
 
         if self.mel_layer is not None:
             raise NotImplementedError("conditional is not implemented."
                                       "use `unconditional = True`.")
-            spec = self.mel_layer(waveform)  # (B, n_mels, T)
+            spec = self.mel_layer(waveform)
             spec = torch.log(spec + 1e-6)
             x_t, spectrogram = trim_spec_roll(x_t, spec)
-            spectrogram = self.spec_projection(spectrogram).unsqueeze(1)  # (B, 1, 88, T)
+            spectrogram = self.spec_projection(spectrogram).unsqueeze(1)
         else:
             spec = None  # spec before projection
             spectrogram = None  # spec after projection
@@ -551,11 +550,11 @@ class MuseDiff(SpecRollDiffusion):
         x = skip / sqrt(len(self.residual_layers))
         x = self.skip_projection(x)
         x = F.relu(x)
-        x = self.output_projection(x)  # (B, 1, F, T)
+        x = self.output_projection(x)
 
         x = x.unsqueeze(1)
 
-        return x.transpose(-2, -1), spec  # (B, T, F)
+        return x.transpose(-2, -1), spec  ## [B, 1, 5, 4, 48, 88]
 
 
 
