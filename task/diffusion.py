@@ -554,6 +554,11 @@ class SpecRollDiffusion(pl.LightningModule):
                     for idx, j in enumerate(noise_npy):
                         if idx<4:
                             # j (1, T, F)
+                            if (j.ndim == 5 and j.shape[3] == 48):  # MuseDiff
+                                # print(j.shape)  # >>> torch.Size([1, 5, 4, 48, 88])
+                                j = j.transpose(0, 2, 3, 1, 4)
+                                shape = j.shape
+                                j = j.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
                             ax.flatten()[idx].imshow(j[0].T, aspect='auto', origin='lower')
                             self.logger.experiment.add_figure(
                                 f"Test/pred",
@@ -566,6 +571,12 @@ class SpecRollDiffusion(pl.LightningModule):
             fig1, ax1 = plt.subplots(2,2)
             fig2, ax2 = plt.subplots(2,2)
             for idx, roll_pred_i in enumerate(roll_pred):
+
+                if (roll_pred_i.ndim == 5 and roll_pred_i.shape[3] == 48):  # MuseDiff
+                    # print(roll_pred_i.shape)  # >>> torch.Size([1, 5, 4, 48, 88])
+                    roll_pred_i = roll_pred_i.transpose(0, 2, 3, 1, 4)
+                    shape = roll_pred_i.shape
+                    roll_pred_i = roll_pred_i.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
 
                 ax2.flatten()[idx].imshow((roll_pred_i[0]>self.hparams.frame_threshold).T, aspect='auto', origin='lower')
                 self.logger.experiment.add_figure(
@@ -603,26 +614,32 @@ class SpecRollDiffusion(pl.LightningModule):
             #======== Animation saved ===========
 
         # export as midi
-        for roll_idx, np_frame in enumerate(noise_list[-1][0]):
-            # np_frame = (1, T, 88)
-            np_frame = np_frame[0]
-            p_est, i_est = extract_notes_wo_velocity(np_frame, np_frame)
+        if (noise_list[-1][0].ndim == 3):  # diffroll
+            for roll_idx, np_frame in enumerate(noise_list[-1][0]):
+                # np_frame = (1, T, 88)
+                np_frame = np_frame[0]
+                p_est, i_est = extract_notes_wo_velocity(np_frame, np_frame)
 
-            scaling = HOP_LENGTH / SAMPLE_RATE
-            # Converting time steps to seconds and midi number to frequency
-            i_est = (i_est * scaling).reshape(-1, 2)
-            p_est = np.array([midi_to_hz(MIN_MIDI + midi) for midi in p_est])
+                scaling = HOP_LENGTH / SAMPLE_RATE
+                # Converting time steps to seconds and midi number to frequency
+                i_est = (i_est * scaling).reshape(-1, 2)
+                p_est = np.array([midi_to_hz(MIN_MIDI + midi) for midi in p_est])
 
-            clean_notes = (i_est[:,1]-i_est[:,0])>self.hparams.generation_filter
+                clean_notes = (i_est[:,1]-i_est[:,0])>self.hparams.generation_filter
 
-            save_midi(os.path.join('./', f'clean_midi_e{batch_idx}_{roll_idx}.mid'),
-                      p_est[clean_notes],
-                      i_est[clean_notes],
-                      [127]*len(p_est))
-            save_midi(os.path.join('./', f'raw_midi_{batch_idx}_{roll_idx}.mid'),
-                      p_est,
-                      i_est,
-                      [127]*len(p_est))
+                save_midi(os.path.join('./', f'clean_midi_e{batch_idx}_{roll_idx}.mid'),
+                        p_est[clean_notes],
+                        i_est[clean_notes],
+                        [127]*len(p_est))
+                save_midi(os.path.join('./', f'raw_midi_{batch_idx}_{roll_idx}.mid'),
+                        p_est,
+                        i_est,
+                        [127]*len(p_est))
+        elif (noise_list[-1][0].ndim == 6 and noise_list[-1][0].shape[4] == 48):
+            # MuseDiff
+            # (4, 1, 5, 4, 48, 88)
+            np_frame = np_frame[0]  # (5, 4, 48, 88)
+
 
 #         # uncomment this part if you want to save ground truth midi
 #         for roll_idx, np_frame in enumerate(roll_label.unsqueeze(1).cpu().numpy()):
@@ -1092,9 +1109,20 @@ class SpecRollDiffusion(pl.LightningModule):
             caxs[idx].cla()
             caxs[4+idx].cla()
 
+            tensor1 = noise_list[0][0][idx]
+            tensor2 = noise_list[1+self.hparams.timesteps-t_idx][0][idx]
+
             # roll_pred (1, T, F)
-            im1 = ax_flat[idx].imshow(noise_list[0][0][idx][0].detach().T.cpu(), aspect='auto', origin='lower')
-            im2 = ax_flat[4+idx].imshow(noise_list[1+self.hparams.timesteps-t_idx][0][idx][0].T, aspect='auto', origin='lower')
+
+            if (noise_list[0][0][idx].ndim == 5 and noise_list[0][0][idx].shape[3] == 48):  # MuseDiff
+                # print(tensor.shape) >>> torch.Size([1, 5, 4, 48, 88])
+                tensor1 = tensor1.permute(0, 2, 3, 1, 4)
+                tensor2 = tensor2.transpose(0, 2, 3, 1, 4)
+                shape = tensor1.shape
+                tensor1 = tensor1.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+                tensor2 = tensor2.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+            im1 = ax_flat[idx].imshow(tensor1[0].detach().T.cpu(), aspect='auto', origin='lower')
+            im2 = ax_flat[4+idx].imshow(tensor2[0].T, aspect='auto', origin='lower')
             fig.colorbar(im1, cax=caxs[idx])
             fig.colorbar(im2, cax=caxs[4+idx])
 
@@ -1228,6 +1256,8 @@ def extract_notes_wo_velocity(onsets, frames, onset_threshold=0.5, frame_thresho
     pitches = []
     intervals = []
 
+    print(onset_diff)
+    print(onset_diff.shape)
     frame_locs, pitch_locs = np.nonzero(onset_diff)
     for frame, pitch in zip(frame_locs, pitch_locs):
 
