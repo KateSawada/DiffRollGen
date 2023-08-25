@@ -14,3 +14,4 @@ torchaudio==0.11.0+cu113
 scikit-learn==1.1.1
 mir_eval==0.7
 Pillow==9.5.0  # to avoid `AttributeError: module 'PIL.Image' has no attribute 'ANTIALIAS'`
+pypianoroll==1.0.4
