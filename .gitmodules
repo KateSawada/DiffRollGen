@@ -1,0 +1,3 @@
+[submodule "MuseDecoder"]
+	path = MuseDecoder
+	url = git@github.com:KateSawada/MuseDecoder.git
