@@ -24,6 +24,8 @@ import os
 from mido import Message, MidiFile, MidiTrack
 from mir_eval.util import hz_to_midi
 
+from MuseDecoder import ndarray_to_midi
+
 # from model.utils import Normalization
 def linear_beta_schedule(beta_start, beta_end, timesteps):
     return torch.linspace(beta_start, beta_end, timesteps)
@@ -637,9 +639,42 @@ class SpecRollDiffusion(pl.LightningModule):
                         [127]*len(p_est))
         elif (noise_list[-1][0].ndim == 6 and noise_list[-1][0].shape[4] == 48):
             # MuseDiff
-            # (4, 1, 5, 4, 48, 88)
-            np_frame = np_frame[0]  # (5, 4, 48, 88)
 
+            # print(noise_list[-1][0].shape)  # >>> (song, 1, 5, 4, 48, 88)
+            pianoroll = noise_list[-1][0]
+            pianoroll = pianoroll.squeeze() # >>> (song, 5, 4, 48, 88)
+            pianoroll = pianoroll.transpose(1, 0, 2, 3, 4)  # >>> (5, song, 4, 48, 88)
+            pianoroll = np.flip(pianoroll, axis=0).copy()
+            shape = pianoroll.shape
+            pianoroll = pianoroll.reshape(
+                shape[0], shape[1] * shape[2] * shape[3], shape[4])
+
+            # raw
+            mid = ndarray_to_midi(
+                array=pianoroll,
+                is_velocity_zero_one=True,
+                programs=(0, 0, 25, 33, 48),
+                is_drums=[True, False, False, False, False,],
+                track_names=["Drums", "Piano", "Guitar", "Bass", "Strings",],
+                tempo=100,
+                beat_resolution=12,
+                lowest_pitch=21,
+            )
+            mid.write(os.path.join('./', f'raw_midi_e{batch_idx}.mid'))
+
+            # clean
+            pianoroll = (pianoroll > 0.3).astype(float)
+            mid = ndarray_to_midi(
+                array=pianoroll,
+                is_velocity_zero_one=True,
+                programs=(0, 0, 25, 33, 48),
+                is_drums=[True, False, False, False, False,],
+                track_names=["Drums", "Piano", "Guitar", "Bass", "Strings",],
+                tempo=100,
+                beat_resolution=12,
+                lowest_pitch=21,
+            )
+            mid.write(os.path.join('./', f'clean_midi_e{batch_idx}.mid'))
 
 #         # uncomment this part if you want to save ground truth midi
 #         for roll_idx, np_frame in enumerate(roll_label.unsqueeze(1).cpu().numpy()):

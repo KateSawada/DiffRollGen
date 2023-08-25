@@ -1,4 +1,4 @@
-name: 'MAPS'
+name: 'MuseDiffSampling'
 args:
     root: ${data_root}
     groups: 'test'
@@ -13,5 +13,5 @@ args:
     ext_audio: '.wav'
     sampling_rate: 16000
     overlap: True
-    audio_path: ''
+    audio_path: ''  # dummy path
 num_samples: 4

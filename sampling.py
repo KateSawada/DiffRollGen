@@ -24,7 +24,11 @@ def main(cfg):
     cfg.data_root = to_absolute_path(cfg.data_root)
     cfg.dataset.args.audio_path = to_absolute_path(cfg.dataset.args.audio_path)
     S = cfg.dataset.num_samples # choose the number of samples to generate
-    x = torch.randn(S, 1, 640, 88)
+
+    if (cfg.dataset.name == 'MuseDiffSampling'):
+        x = torch.randn(S, 5, 4, 48, 88)
+    else:
+        x = torch.randn(S, 1, 640, 88)
 
     if cfg.task.sampling.type=='inpainting_ddpm_x0':
         if cfg.dataset.name in ['MAESTRO', 'MAPS']:
@@ -42,8 +46,12 @@ def main(cfg):
             pass
 
     elif cfg.task.sampling.type=='generation_ddpm_x0':
-        waveform = torch.randn(S, 327680)
-        dataset = TensorDataset(x, waveform)
+        if cfg.dataset.name in ['MuseDiffSampling']:
+            x = torch.randn(S, 1, 5, 4, 48, 88)
+            dataset = TensorDataset(x, torch.zeros(S, 1))
+        else:
+            waveform = torch.randn(S, 327680)
+            dataset = TensorDataset(x, waveform)
 
     if len(dataset) < cfg.dataloader.batch_size:
         warnings.warn(f"Batch size is larger than total number of audio clips. Forcing batch size to {len(dataset)}")

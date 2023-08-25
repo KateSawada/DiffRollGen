@@ -1,4 +1,4 @@
-gpus: 1
+ gpus: 1
 val_freq: 5
 hop_length: 512
 sequence_length: 327680
