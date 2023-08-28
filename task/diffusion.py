@@ -644,6 +644,7 @@ class SpecRollDiffusion(pl.LightningModule):
             pianoroll = noise_list[-1][0]
             pianoroll = pianoroll.squeeze() # >>> (song, 5, 4, 48, 88)
             pianoroll = pianoroll.transpose(1, 0, 2, 3, 4)  # >>> (5, song, 4, 48, 88)
+            # TODO: MuseGANDatasetのgetitemが間違っていて，めちゃくちゃなことをしている
             pianoroll = np.flip(pianoroll, axis=0).copy()
             shape = pianoroll.shape
             pianoroll = pianoroll.reshape(
