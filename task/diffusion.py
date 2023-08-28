@@ -637,7 +637,7 @@ class SpecRollDiffusion(pl.LightningModule):
                         p_est,
                         i_est,
                         [127]*len(p_est))
-        elif (noise_list[-1][0].ndim == 6 and noise_list[-1][0].shape[4] == 48):
+        elif (noise_list[-1][0].shape == (1, 5, 4, 48, 88)):
             # MuseDiff
 
             # print(noise_list[-1][0].shape)  # >>> (song, 1, 5, 4, 48, 88)
