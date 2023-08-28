@@ -1,0 +1,13 @@
+name: 'LPDTrackDataset'
+train:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/lpd_cleansed_tools/outputs/lpd_piano_train.txt"
+  used_tracks:
+    - 1
+val:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/lpd_cleansed_tools/outputs/lpd_piano_valid.txt"
+  used_tracks:
+    - 1
+test:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/lpd_cleansed_tools/outputs/lpd_piano_eval.txt"
+  used_tracks:
+    - 1
