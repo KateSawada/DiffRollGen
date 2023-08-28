@@ -12,7 +12,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 import AudioLoader.music.amt as MusicDataset
-from utils.musegan_dataset import MuseGANDataset
+from utils import musegan_dataset
 
 
 @hydra.main(config_path="config", config_name="spec_roll")
@@ -23,10 +23,13 @@ def main(cfg):
         train_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.train)
         val_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.val)
         test_set = getattr(MusicDataset, cfg.dataset.name)(**cfg.dataset.test)
-    elif cfg.dataset.name in ['MuseGANDataset']:
-        train_set = MuseGANDataset(cfg.dataset.train_list)
-        val_set = MuseGANDataset(cfg.dataset.val_list)
-        test_set = MuseGANDataset(cfg.dataset.test_list)
+    elif cfg.dataset.name in ('MuseGANDataset', 'LPDTrackDataset'):
+        train_set = getattr(
+            musegan_dataset, cfg.dataset.name)(**cfg.dataset.train)
+        val_set = getattr(
+            musegan_dataset, cfg.dataset.name)(**cfg.dataset.val)
+        test_set = getattr(
+            musegan_dataset, cfg.dataset.name)(**cfg.dataset.test)
     else:
         raise ValueError(f"{cfg.dataset.name} is not supported")
 

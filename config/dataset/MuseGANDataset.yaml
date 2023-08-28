@@ -1,4 +1,7 @@
 name: 'MuseGANDataset'
-train_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_train.txt"
-val_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_valid.txt"
-test_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_eval.txt"
+train:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_train.txt"
+val:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_valid.txt"
+test:
+  pianoroll_list: "/home/ksawada/Documents/lab/lab_research/musegan_refactoring/egs/lpd/data/lpd_eval.txt"
