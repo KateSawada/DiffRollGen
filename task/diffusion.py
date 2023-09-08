@@ -686,13 +686,13 @@ class SpecRollDiffusion(pl.LightningModule):
                 lowest_pitch=21,
             )
             mid.write(os.path.join('./', f'clean_midi_e{batch_idx}.mid'))
-        elif (noise_list[-1][0].shape[2:] == (4, 48, 88)):
+        elif (noise_list[-1][0].shape[3:] == (4, 48, 88)):
             # LPDTrack
             print("PLD Track processing")
 
-            # print(noise_list[-1][0].shape)  # >>> (song, 1, 5, 4, 48, 88)
+            # print(noise_list[-1][0].shape)  # >>> (song, 1, n_tracks, 4, 48, 88)
             pianoroll = noise_list[-1][0]
-            pianoroll = pianoroll.squeeze() # >>> (song, 5, 4, 48, 88)
+            pianoroll = pianoroll.squeeze(1) # >>> (song, n_tracks, 4, 48, 88)
             pianoroll = pianoroll.transpose(1, 0, 2, 3, 4)  # >>> (n_tracks, song, 4, 48, 88)
             shape = pianoroll.shape
             pianoroll = pianoroll.reshape(
@@ -716,7 +716,7 @@ class SpecRollDiffusion(pl.LightningModule):
             mid = ndarray_to_midi(
                 array=pianoroll,
                 is_velocity_zero_one=True,
-                programs=(0),
+                programs=[0],
                 is_drums=[False,],
                 track_names=["Piano",],
                 tempo=100,
