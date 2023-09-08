@@ -561,6 +561,11 @@ class SpecRollDiffusion(pl.LightningModule):
                                 j = j.transpose(0, 2, 3, 1, 4)
                                 shape = j.shape
                                 j = j.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+                            elif (j.shape[2:] == (4, 48, 88)):  # LPDTrack
+                                j = j.transpose(0, 2, 3, 1, 4)
+                                shape = j.shape
+                                j = j.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+
                             ax.flatten()[idx].imshow(j[0].T, aspect='auto', origin='lower')
                             self.logger.experiment.add_figure(
                                 f"Test/pred",
@@ -573,13 +578,18 @@ class SpecRollDiffusion(pl.LightningModule):
             fig1, ax1 = plt.subplots(2,2)
             fig2, ax2 = plt.subplots(2,2)
             for idx, roll_pred_i in enumerate(roll_pred):
-
-                if (roll_pred_i.ndim == 5 and roll_pred_i.shape[3] == 48):  # MuseDiff
-                    # print(roll_pred_i.shape)  # >>> torch.Size([1, 5, 4, 48, 88])
-                    roll_pred_i = roll_pred_i.transpose(0, 2, 3, 1, 4)
-                    shape = roll_pred_i.shape
-                    roll_pred_i = roll_pred_i.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
-
+                if idx < 4:
+                    if (roll_pred_i.shape == (1, 5, 4, 48, 88)):  # MuseDiff
+                        # print(roll_pred_i.shape)  # >>> torch.Size([1, 5, 4, 48, 88])
+                        roll_pred_i = roll_pred_i.transpose(0, 2, 3, 1, 4)
+                        shape = roll_pred_i.shape
+                        roll_pred_i = roll_pred_i.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+                    elif (roll_pred_i.shape[2:] == (4, 48, 88)):  # LPDTrack
+                        roll_pred_i = roll_pred_i.transpose(0, 2, 3, 1, 4)
+                        shape = roll_pred_i.shape
+                        roll_pred_i = roll_pred_i.reshape(shape[0], shape[1] * shape[2], shape[3] * shape[4])
+                else:
+                    break
                 ax2.flatten()[idx].imshow((roll_pred_i[0]>self.hparams.frame_threshold).T, aspect='auto', origin='lower')
                 self.logger.experiment.add_figure(
                     f"Test/pred_roll",
@@ -612,7 +622,7 @@ class SpecRollDiffusion(pl.LightningModule):
                                           interval=500,
                                           blit=False,
                                           repeat_delay=1000)
-            ani.save('algo2.gif', dpi=80, writer='imagemagick')
+            ani.save('algo2.gif', dpi=80, writer="pillow")
             #======== Animation saved ===========
 
         # export as midi
@@ -671,6 +681,44 @@ class SpecRollDiffusion(pl.LightningModule):
                 programs=(0, 0, 25, 33, 48),
                 is_drums=[True, False, False, False, False,],
                 track_names=["Drums", "Piano", "Guitar", "Bass", "Strings",],
+                tempo=100,
+                beat_resolution=12,
+                lowest_pitch=21,
+            )
+            mid.write(os.path.join('./', f'clean_midi_e{batch_idx}.mid'))
+        elif (noise_list[-1][0].shape[2:] == (4, 48, 88)):
+            # LPDTrack
+            print("PLD Track processing")
+
+            # print(noise_list[-1][0].shape)  # >>> (song, 1, 5, 4, 48, 88)
+            pianoroll = noise_list[-1][0]
+            pianoroll = pianoroll.squeeze() # >>> (song, 5, 4, 48, 88)
+            pianoroll = pianoroll.transpose(1, 0, 2, 3, 4)  # >>> (n_tracks, song, 4, 48, 88)
+            shape = pianoroll.shape
+            pianoroll = pianoroll.reshape(
+                shape[0], shape[1] * shape[2] * shape[3], shape[4])
+
+            # raw
+            mid = ndarray_to_midi(
+                array=pianoroll,
+                is_velocity_zero_one=True,
+                programs=(0,),
+                is_drums=[False,],
+                track_names=["Piano",],
+                tempo=100,
+                beat_resolution=12,
+                lowest_pitch=21,
+            )
+            mid.write(os.path.join('./', f'raw_midi_e{batch_idx}.mid'))
+
+            # clean
+            pianoroll = (pianoroll > 0.3).astype(float)
+            mid = ndarray_to_midi(
+                array=pianoroll,
+                is_velocity_zero_one=True,
+                programs=(0),
+                is_drums=[False,],
+                track_names=["Piano",],
                 tempo=100,
                 beat_resolution=12,
                 lowest_pitch=21,

@@ -49,6 +49,9 @@ def main(cfg):
         if cfg.dataset.name in ['MuseDiffSampling']:
             x = torch.randn(S, 1, 5, 4, 48, 88)
             dataset = TensorDataset(x, torch.zeros(S, 1))
+        elif cfg.dataset.name in ['LPDTrackSampling']:
+            x = torch.randn(S, 1, cfg.dataset.num_tracks, 4, 48, 88)
+            dataset = TensorDataset(x, torch.zeros(S, 1))
         else:
             waveform = torch.randn(S, 327680)
             dataset = TensorDataset(x, waveform)

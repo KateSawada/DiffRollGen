@@ -1,0 +1,9 @@
+name: 'LPDTrackSampling'
+num_tracks: 1
+programs:
+  - 0  # piano
+is_drums:
+  - False  # piano
+num_samples: 4
+args:
+  audio_path: ""
