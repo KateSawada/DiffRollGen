@@ -1,3 +1,6 @@
 [submodule "MuseDecoder"]
 	path = MuseDecoder
 	url = git@github.com:KateSawada/MuseDecoder.git
+[submodule "SubjectiveMuseEvaluator"]
+	path = SubjectiveMuseEvaluator
+	url = git@github.com:KateSawada/SubjectiveMuseEvaluator.git
