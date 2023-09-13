@@ -647,7 +647,7 @@ class SpecRollDiffusion(pl.LightningModule):
                         p_est,
                         i_est,
                         [127]*len(p_est))
-        elif (noise_list[-1][0].shape == (1, 5, 4, 48, 88)):
+        elif (noise_list[-1][0].shape[1:] == (1, 5, 4, 48, 88)):
             # MuseDiff
 
             # print(noise_list[-1][0].shape)  # >>> (song, 1, 5, 4, 48, 88)
@@ -655,7 +655,16 @@ class SpecRollDiffusion(pl.LightningModule):
             pianoroll = pianoroll.squeeze() # >>> (song, 5, 4, 48, 88)
             pianoroll = pianoroll.transpose(1, 0, 2, 3, 4)  # >>> (5, song, 4, 48, 88)
             # TODO: MuseGANDatasetのgetitemが間違っていて，めちゃくちゃなことをしている
-            pianoroll = np.flip(pianoroll, axis=0).copy()
+            pianoroll_drm = pianoroll[4:5, :, :, :, :-4]
+            pianoroll_drm = np.pad(
+                pianoroll_drm,
+                ((0, 0), (0, 0), (0, 0), (0, 0), (4, 0)),
+                mode="constant",
+                constant_values=0,
+            )
+            pianoroll_inst = pianoroll[0:4]
+            pianoroll = np.concatenate((pianoroll_drm, pianoroll_inst), axis=0)
+
             shape = pianoroll.shape
             pianoroll = pianoroll.reshape(
                 shape[0], shape[1] * shape[2] * shape[3], shape[4])
@@ -697,7 +706,6 @@ class SpecRollDiffusion(pl.LightningModule):
             shape = pianoroll.shape
             pianoroll = pianoroll.reshape(
                 shape[0], shape[1] * shape[2] * shape[3], shape[4])
-
             # raw
             mid = ndarray_to_midi(
                 array=pianoroll,
