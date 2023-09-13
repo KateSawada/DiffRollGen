@@ -597,7 +597,6 @@ class SpecRollDiffusion(pl.LightningModule):
                     global_step=0)
                 plt.close()
 
-            torch.save(noise_list, 'noise_list.pt')
             # torch.save(spec, 'spec.pt')
             # torch.save(roll_label, 'roll_label.pt')
 
@@ -624,6 +623,7 @@ class SpecRollDiffusion(pl.LightningModule):
                                           repeat_delay=1000)
             ani.save('algo2.gif', dpi=80, writer="pillow")
             #======== Animation saved ===========
+        torch.save(noise_list[-1][0], f'noise_list[-1][0]_{batch_idx}.pt')
 
         # export as midi
         if (noise_list[-1][0].ndim == 3):  # diffroll
