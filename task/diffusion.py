@@ -325,11 +325,12 @@ class SpecRollDiffusion(pl.LightningModule):
         roll_pred = noise_list[-1][0] # (B, 1, T, F)
         roll_label = batch["frame"].unsqueeze(1).cpu()
 
+        # TODO: このあたり，datasetが変わる(specがNoneになる)時にエラー出る．
         if batch_idx==0:
-            torch.save(spec, 'spec.pt')
-            self.visualize_figure(spec.transpose(-1,-2).unsqueeze(1),
-                                  'Test/spec',
-                                  batch_idx)
+            # torch.save(spec, 'spec.pt')
+            # self.visualize_figure(spec.transpose(-1,-2).unsqueeze(1),
+            #                       'Test/spec',
+            #                       batch_idx)
             for noise_npy, t_index in noise_list:
                 if (t_index+1)%10==0:
                     fig, ax = plt.subplots(2,2)
@@ -826,7 +827,6 @@ class SpecRollDiffusion(pl.LightningModule):
             pred_roll, spec = self(x_t, waveform, t) # predict the noise N(0, 1)
             diffusion_loss = self.p_losses(roll, pred_roll, loss_type=self.hparams.loss_type)
             if isinstance(batch, list): # when using multiple dataset do one more feedforward
-
                 x_t2 = q_sample( # sampling noise at time t
                     x_start=roll2,
                     t=t,
