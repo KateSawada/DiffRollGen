@@ -15,3 +15,4 @@ args:
     overlap: True
     audio_path: ''  # dummy path
 num_samples: 4
+num_tracks: 5

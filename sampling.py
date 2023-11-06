@@ -26,7 +26,7 @@ def main(cfg):
     S = cfg.dataset.num_samples # choose the number of samples to generate
 
     if (cfg.dataset.name == 'MuseDiffSampling'):
-        x = torch.randn(S, 5, 4, 48, 88)
+        x = torch.randn(S, cfg.dataset.num_tracks, 4, 48, 88)
     else:
         x = torch.randn(S, 1, 640, 88)
 
@@ -47,7 +47,7 @@ def main(cfg):
 
     elif cfg.task.sampling.type=='generation_ddpm_x0':
         if cfg.dataset.name in ['MuseDiffSampling']:
-            x = torch.randn(S, 1, 5, 4, 48, 88)
+            x = torch.randn(S, 1, cfg.dataset.num_tracks, 4, 48, 88)
             dataset = TensorDataset(x, torch.zeros(S, 1))
         elif cfg.dataset.name in ['LPDTrackSampling']:
             x = torch.randn(S, 1, cfg.dataset.num_tracks, 4, 48, 88)
